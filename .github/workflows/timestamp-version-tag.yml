@@ -1,0 +1,46 @@
+name: Timestamp + Version + Tag
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Update filters.txt, bump version, tag
+        env:
+          FILE: filters.txt
+        run: |
+          set -e
+          TS="$(TZ='Asia/Kolkata' date '+%Y-%m-%d %H:%M:%S') IST"
+
+          CUR="$(grep -E '^! Version:' "$FILE" | awk '{print $3}' || true)"
+          CUR="${CUR:-1.0.0}"
+
+          IFS='.' read -r MA MI PA <<< "$CUR"
+          MA="${MA:-1}" ; MI="${MI:-0}" ; PA="${PA:-0}"
+          PA=$((PA+1))
+          NEW="$MA.$MI.$PA"
+
+          perl -i -pe 's/^! Last updated:.*$/! Last updated: '"$TS"'/' "$FILE"
+          perl -i -pe 's/^! Version:.*$/! Version: '"$NEW"'/' "$FILE"
+
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add "$FILE"
+            git commit -m "Auto: bump version to $NEW + update timestamp" || true
+          fi
+
+          TAG="v$NEW"
+          git fetch --tags --force
+
+          if ! git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            git tag -a "$TAG" -m "Release $TAG"
+            git push origin "$TAG"
+          fi
