@@ -6,3 +6,4 @@ duckduckgo.com##.set-browser-promo-mobile
 www.itclabs.com##myPopup
 www.anandabazar.com##.stkyadbox
 www.ndtv.com##.ArtFtVid_wr
+ysph.yale.edu##cc--main
